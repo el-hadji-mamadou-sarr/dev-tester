@@ -10,6 +10,11 @@
 </template>
 <style scoped>
 .plane {
-  position: fixed;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
 }
 </style>

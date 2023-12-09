@@ -5,7 +5,8 @@ import Move from '@/components/sprites/Move.vue'
 import TurnLeft from '@/components/sprites/TurnLeft.vue'
 import { onBeforeMount, onMounted, ref, watch } from 'vue'
 import Level from '@/utils/ILevel'
-
+import PlayIcon from '@/components/icons/PlayIcon.vue'
+import StopIcon from '@/components/icons/StopIcon.vue'
 const plane_elt = ref()
 const plane_head = ref(180)
 const run = ref(false)
@@ -13,23 +14,65 @@ const instructions_stack = ref<number[]>([])
 const innitial_plane_pos = ref()
 const level_data = ref()
 const objectives = ref()
+const loading = ref(true)
 
-onBeforeMount(async () => {
-  level_data.value = await load_level()
+onMounted(() => {
+  load_level()
 })
 
-onMounted(async () => {
-  plane_elt.value = document.querySelector('.plane')
-  plane_elt.value.style.transform = 'rotate(180deg)'
-  plane_head.value = 0
-  innitial_plane_pos.value = {
-    x: parseFloat(plane_elt.value.style.left) || 0,
-    y: parseFloat(plane_elt.value.style.top) || 0
+const set_plane_direction = () => {
+  switch (level_data.value.plane_direction) {
+    case 'right':
+      plane_head.value = 0
+      plane_elt.value.style.transform = 'rotate(180deg)'
+      break
+    case 'left':
+      plane_head.value = 180
+      break
+    case 'up':
+      plane_head.value = -90
+      plane_elt.value.style.transform = 'rotate(90deg)'
+      break
+    case 'down':
+      plane_head.value = 90
+      plane_elt.value.style.transform = 'rotate(-90deg)'
+      break
   }
-  objectives.value = level_data.value.objectives.length
-  console.log(objectives.value)
-})
+}
 
+watch(loading, (val) => {
+  if (!val) {
+    console.log(val)
+    plane_elt.value = document.querySelector('.plane')
+    if (plane_elt.value) {
+      set_plane_direction()
+      innitial_plane_pos.value = {
+        x: level_data.value.plane_pos.x * 43,
+        y: level_data.value.plane_pos.y * 43
+      }
+      objectives.value = level_data.value.objectives.length
+    } else {
+      console.warn('Could not find .plane element.')
+    }
+  }
+})
+const load_level = async () => {
+  try {
+    const res = await fetch('../../levels.json', {
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      }
+    })
+    const levels = (await res.json()) as Level[]
+    level_data.value = levels[0]
+  } catch (error) {
+    // Handle the error (e.g., log it, set an error state, etc.)
+    console.error('Error loading level:', error)
+  } finally {
+    loading.value = false
+  }
+}
 const check_get_objective = () => {
   const currentTop = parseFloat(plane_elt.value.style.top) / 43 || 0
   const currentLeft = parseFloat(plane_elt.value.style.left) / 43 || 0
@@ -51,16 +94,6 @@ watch(objectives, (newVal, oldVal) => {
   }
 })
 
-const load_level = async () => {
-  const res = await fetch('../../levels.json', {
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    }
-  })
-  const levels = (await res.json()) as Level[]
-  return levels[0]
-}
 const move_plane = () => {
   const currentTop = parseFloat(plane_elt.value.style.top) || 0
   const currentLeft = parseFloat(plane_elt.value.style.left) || 0
@@ -150,14 +183,16 @@ const shift_instructions_stack = () => {
 // f0 is the the list of instructions
 const f0 = ref<(number | string)[]>([NaN, NaN, NaN, NaN])
 const run_f1 = () => {}
+const run_game = () => {
+  reset_plane_position()
+  update_instructions_stack()
+  run.value = true
+  setTimeout(() => {
+    run_fo()
+  }, 500)
+}
 // the function that runs the instructions in f0
 const run_fo = async () => {
-  if (!run.value) {
-    reset_plane_position()
-    update_instructions_stack()
-    run.value = true
-  }
-
   for (let index = 0; index < f0.value.length; index++) {
     const val = f0.value[index]
     if (!run.value) return
@@ -266,12 +301,22 @@ const select_f0 = () => {
   f0.value[selected_box.value] = 'f0'
   reset_selected_box()
 }
+
+const stop_game = () => {
+  run.value = false
+}
 </script>
 <template>
   <main>
-    <Map :level_data="level_data" />
-
-    <button @click="run_fo" :disabled="run">run Fo</button>
+    <Map :loading="loading" :level_data="level_data" />
+    <div class="btns">
+      <button class="btn play-btn" @click="run_game" :disabled="run">
+        <PlayIcon :disabled="run" />
+      </button>
+      <button class="btn stop-btn" @click="stop_game" :disabled="!run">
+        <StopIcon :disabled="!run" />
+      </button>
+    </div>
     <div class="instructions-list">
       <!-- <div class="current-instruction">
         <TurnRight v-if="instructions_stack[0] == 0" />
@@ -311,6 +356,18 @@ const select_f0 = () => {
   </main>
 </template>
 <style scoped>
+.btns {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  gap: 10px;
+  margin: 1rem;
+}
+.btn {
+  padding: auto;
+  width: 40px;
+  height: 40px;
+}
 .next-instructions {
   width: 40px;
   height: 40px;

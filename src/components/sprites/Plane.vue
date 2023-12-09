@@ -1,5 +1,5 @@
 <template>
-  <div class="plane" :style="{ top: position!.y * 43 + 'px', left: position!.x * 43 + 'px' }">
+  <div class="plane" :style="{ top: position?.y * 43 + 'px', left: position?.x * 43 + 'px' }">
     <svg
       width="30px"
       height="30px"
@@ -17,7 +17,7 @@
 <script setup lang="ts">
 const props = defineProps({
   position: {
-    type: Object
+    type: Object,
   }
 })
 </script>

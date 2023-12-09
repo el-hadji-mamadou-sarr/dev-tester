@@ -7,6 +7,7 @@ import { onBeforeMount, onMounted, ref, watch } from 'vue'
 import Level from '@/utils/ILevel'
 import PlayIcon from '@/components/icons/PlayIcon.vue'
 import StopIcon from '@/components/icons/StopIcon.vue'
+import { BLOCK_COLORS } from '@/utils/constantes'
 const plane_elt = ref()
 const plane_head = ref(180)
 const run = ref(false)
@@ -15,7 +16,7 @@ const innitial_plane_pos = ref()
 const level_data = ref()
 const objectives = ref()
 const loading = ref(true)
-
+const memo_box_color = ref()
 onMounted(() => {
   load_level()
 })
@@ -138,12 +139,13 @@ const selected_box = ref(NaN)
 const selected_box_elt = ref()
 
 const select_box = (i: number) => {
-  if (selected_box_elt.value) {
-    selected_box_elt.value.style.backgroundColor = 'white'
+  if (selected_box_elt.value?.style.backgroundColor == 'grey') {
+    selected_box_elt.value.style.backgroundColor = memo_box_color.value
   }
   selected_box.value = i
   selected_box_elt.value = document.querySelector(`.fo-item-${i}`) as HTMLElement
   if (selected_box_elt.value) {
+    memo_box_color.value = selected_box_elt.value.style.backgroundColor
     selected_box_elt.value.style.backgroundColor = 'grey'
   }
 }
@@ -159,11 +161,12 @@ const reset_plane_position = () => {
 const update_instructions_stack = () => {
   if (instructions_stack.value.length > 32) return
   for (let i = 0; i <= Math.abs(32 - instructions_stack.value.length); i++) {
-    if (Number.isNaN(f0.value[i])) {
+    if (i >= f0.value.length) return
+    if (Number.isNaN(f0.value[i][0])) {
       continue
     }
-    if (f0.value[i] != 'f0') {
-      instructions_stack.value.push(Number(f0.value[i]))
+    if (f0.value[i][0] != 'f0') {
+      instructions_stack.value.push(Number(f0.value[i][0]))
     } else {
       update_instructions_stack()
     }
@@ -181,7 +184,12 @@ const shift_instructions_stack = () => {
   }, SPEED / 3)
 }
 // f0 is the the list of instructions
-const f0 = ref<(number | string)[]>([NaN, NaN, NaN, NaN])
+const f0 = ref<(number | string)[][]>([
+  [NaN, NaN],
+  [NaN, NaN],
+  [NaN, NaN],
+  [NaN, NaN]
+])
 const run_f1 = () => {}
 const run_game = () => {
   reset_plane_position()
@@ -191,11 +199,26 @@ const run_game = () => {
     run_fo()
   }, 500)
 }
+
+const check_color_condition = (color_cond: number) => {
+  const currentTop = parseFloat(plane_elt.value.style.top) || 0
+  const currentLeft = parseFloat(plane_elt.value.style.left) || 0
+  const current_box = document.querySelector(`.map-${currentLeft / 43}-${currentTop / 43}`)
+    ?.children[0] as HTMLElement
+  const current_box_color = current_box.getAttribute('fill')
+  if (Number.isNaN(color_cond)) return true
+  if (current_box_color == BLOCK_COLORS[color_cond as keyof typeof BLOCK_COLORS]) {
+    return true
+  } else {
+    return false
+  }
+}
 // the function that runs the instructions in f0
 const run_fo = async () => {
   for (let index = 0; index < f0.value.length; index++) {
-    const val = f0.value[index]
+    const val = f0.value[index][0]
     if (!run.value) return
+    if (!check_color_condition(f0.value[index][1] as number)) continue
     switch (val) {
       case 0:
         await new Promise<void>((resolve) =>
@@ -278,32 +301,61 @@ const check_hit_wall = () => {
 // to reset the selected box
 const reset_selected_box = () => {
   selected_box.value = NaN
-  selected_box_elt.value.style.backgroundColor = 'white'
+  // selected_box_elt.value.style.backgroundColor = 'white'
 }
 
 const select_move = () => {
   if (isNaN(selected_box.value)) return
-  f0.value[selected_box.value] = 2
+  f0.value[selected_box.value][0] = 2
+  if ((f0.value[selected_box.value][1] as number) >= 0) {
+    selected_box_elt.value.style.backgroundColor =
+      BLOCK_COLORS[f0.value[selected_box.value][1] as keyof typeof BLOCK_COLORS]
+  }
   reset_selected_box()
 }
 const select_turn_right = () => {
   if (isNaN(selected_box.value)) return
-  f0.value[selected_box.value] = 0
+  f0.value[selected_box.value][0] = 0
+  if ((f0.value[selected_box.value][1] as number) >= 0) {
+    selected_box_elt.value.style.backgroundColor =
+      BLOCK_COLORS[f0.value[selected_box.value][1] as keyof typeof BLOCK_COLORS]
+  }
   reset_selected_box()
 }
 const select_turn_left = () => {
   if (isNaN(selected_box.value)) return
-  f0.value[selected_box.value] = 1
+  f0.value[selected_box.value][0] = 1
+  if ((f0.value[selected_box.value][1] as number) >= 0) {
+    selected_box_elt.value.style.backgroundColor =
+      BLOCK_COLORS[f0.value[selected_box.value][1] as keyof typeof BLOCK_COLORS]
+  }
   reset_selected_box()
 }
 const select_f0 = () => {
   if (isNaN(selected_box.value)) return
-  f0.value[selected_box.value] = 'f0'
+  f0.value[selected_box.value][0] = 'f0'
+  if ((f0.value[selected_box.value][1] as number) >= 0) {
+    selected_box_elt.value.style.backgroundColor =
+      BLOCK_COLORS[f0.value[selected_box.value][1] as keyof typeof BLOCK_COLORS]
+  }
   reset_selected_box()
 }
 
 const stop_game = () => {
   run.value = false
+}
+
+const select_green = () => {
+  if (isNaN(selected_box.value)) return
+  f0.value[selected_box.value][1] = 0
+}
+const select_blue = () => {
+  if (isNaN(selected_box.value)) return
+  f0.value[selected_box.value][1] = 1
+}
+const select_red = () => {
+  if (isNaN(selected_box.value)) return
+  f0.value[selected_box.value][1] = 2
 }
 </script>
 <template>
@@ -318,11 +370,6 @@ const stop_game = () => {
       </button>
     </div>
     <div class="instructions-list">
-      <!-- <div class="current-instruction">
-        <TurnRight v-if="instructions_stack[0] == 0" />
-        <TurnLeft v-if="instructions_stack[0] == 1" />
-        <Move v-if="instructions_stack[0] == 2" />
-      </div> -->
       <div
         :class="`next-instructions instruction-${i}`"
         v-for="(instruction, i) in instructions_stack.slice(0, 10)"
@@ -341,15 +388,21 @@ const stop_game = () => {
         <span class="fo-span">f0</span>
       </button>
     </div>
+
+    <div class="selections color-selections">
+      <button class="color-box color-box-green" @click="select_green"></button>
+      <button class="color-box color-box-blue" @click="select_blue"></button>
+      <button class="color-box color-box-red" @click="select_red"></button>
+    </div>
     <div class="fo">
       <span class="fo-span">f0 =</span>
       <div v-for="(item, i) in f0">
         <div key="i" :class="`fo-item fo-item-${i}`" @click="select_box(i)">
-          <TurnRight v-if="item == 0" />
-          <TurnLeft v-if="item == 1" />
-          <Move v-if="item == 2" />
-          <span class="fo-span" v-if="item == 'f0'">f0</span>
-          <span class="fo-span" v-if="item == 'f1'">f1</span>
+          <TurnRight v-if="item[0] == 0" />
+          <TurnLeft v-if="item[0] == 1" />
+          <Move v-if="item[0] == 2" />
+          <span class="fo-span" v-if="item[0] == 'f0'">f0</span>
+          <span class="fo-span" v-if="item[0] == 'f1'">f1</span>
         </div>
       </div>
     </div>
@@ -409,6 +462,24 @@ const stop_game = () => {
   height: 40px;
   border-width: 2px;
   border-style: dotted;
+}
+
+.color-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-width: 2px;
+}
+.color-box-green {
+  background-color: #6aa84f;
+}
+.color-box-red {
+  background-color: #d70909;
+}
+.color-box-blue {
+  background-color: #1369b7;
 }
 
 .fo {

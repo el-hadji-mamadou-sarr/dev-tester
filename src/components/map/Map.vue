@@ -16,7 +16,7 @@ import Block from './Block.vue'
 import Plane from '@/components/sprites/Plane.vue'
 import { onMounted, ref } from 'vue'
 import Objective from '../sprites/Objective.vue'
-import { default_level_map } from '@/utils/constantes'
+import { default_level_map, BLOCK_COLORS } from '@/utils/constantes'
 const props = defineProps({
   level_data: {
     type: Object,
@@ -24,12 +24,6 @@ const props = defineProps({
   },
   loading: { type: Boolean }
 })
-
-const BLOCK_COLORS = {
-  0: '#6aa84f',
-  1: '#d70909',
-  2: '#1369b7'
-}
 </script>
 <style scoped>
 .map-rows {

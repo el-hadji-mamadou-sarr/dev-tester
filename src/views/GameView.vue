@@ -136,12 +136,15 @@ const level_up = () => {
 }
 const load_level = async () => {
   try {
-    const res = await fetch('../../levels.json', {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
+    const res = await fetch(
+      'https://raw.githubusercontent.com/el-hadji-mamadou-sarr/jsonHost/main/levels.json',
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
       }
-    })
+    )
     const levels = (await res.json()) as Level[]
     level_data.value = levels[level.value]
     level_data.value.objectives.map((objective: { x: number; y: number }) => {

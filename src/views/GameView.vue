@@ -12,6 +12,8 @@ import { useUserScore } from '../stores/score'
 import { onBeforeRouteUpdate, routerKey, useRoute, useRouter } from 'vue-router'
 import Win from '@/components/Win.vue'
 import ResetIcon from '@/components/icons/ResetIcon.vue'
+import NextLevelIcon from '@/components/icons/NextLevelIcon.vue'
+
 const plane_elt = ref()
 const plane_head = ref(180)
 const run = ref(false)
@@ -25,6 +27,7 @@ const store = useUserScore()
 const route = useRoute()
 const router = useRouter()
 const level = ref(0)
+
 // f0 is the the list of instructions
 const f0 = ref<(number | string)[][]>([
   [NaN, NaN],
@@ -111,22 +114,26 @@ watch(loading, (val) => {
     load_game()
   }
 })
-watch(objectives, (newVal, oldVal) => {
-  if (newVal.length == 0) {
-    if (store.score == 10) {
-      win.value = true
-    } else {
-      store.level_up()
-      run.value = false
-      router.push({ path: `/level/${store.score}` })
-      level.value = store.score
-      loading.value = true
-      load_level()
-      reset_f0()
-      reset_plane_position()
-    }
-  }
-})
+// watch(objectives, (newVal, oldVal) => {
+//   if (newVal.length == 0) {
+//     if (store.score == 10) {
+//       win.value = true
+//     } else {
+//       level_up()
+//     }
+//   }
+// })
+
+const level_up = () => {
+  store.level_up()
+  run.value = false
+  router.push({ path: `/level/${store.score}` })
+  level.value = store.score
+  loading.value = true
+  load_level()
+  reset_f0()
+  reset_plane_position()
+}
 const load_level = async () => {
   try {
     const res = await fetch('../../levels.json', {
@@ -140,6 +147,7 @@ const load_level = async () => {
     level_data.value.objectives.map((objective: { x: number; y: number }) => {
       objectives.push(objective)
     })
+    nextLevelBtn.value = false
   } catch (error) {
     console.error('Error loading level:', error)
   } finally {
@@ -154,16 +162,21 @@ const check_get_objective = () => {
   for (let i = 0; i < objectives.length; i++) {
     const objt = objectives[i]
     if (objt.x == currentLeft && objt.y == currentTop) {
-      console.log('bofore', objectives.length)
-      console.log('bofore i ', i)
+      for (let j = 0; j < level_data.value.objectives.length; j++) {
+        if (
+          level_data.value.objectives[j].x == objt.x &&
+          level_data.value.objectives[j].y == objt.y
+        ) {
+          const objectiveElement = document.querySelector(`.objective-${j}`) as HTMLElement
+          objectiveElement.style.display = 'none'
+          objectives.splice(i, 1)
 
-      objectives.splice(i, 1)
-      console.log('after', objectives.length)
-      const objectiveElement = document.querySelector(`.objective-${i}`) as HTMLElement
-      objectiveElement.style.display = 'none'
-      return
+          return objectives.length
+        }
+      }
     }
   }
+  return objectives.length
 }
 
 const move_plane = () => {
@@ -175,7 +188,11 @@ const move_plane = () => {
       plane_elt.value.style.left = currentLeft + 43 + 'px'
       break
 
-    case -180 || 180:
+    case -180:
+      plane_elt.value.style.left = currentLeft - 43 + 'px'
+      break
+
+    case 180:
       plane_elt.value.style.left = currentLeft - 43 + 'px'
       break
 
@@ -246,7 +263,7 @@ const update_instructions_stack = () => {
   }
 }
 
-const SPEED = 500
+const SPEED = 300
 // to delete the first element of the stack
 const shift_instructions_stack = () => {
   setTimeout(() => {
@@ -271,6 +288,7 @@ const check_color_condition = (color_cond: number) => {
   const current_box = document.querySelector(`.map-${currentLeft / 43}-${currentTop / 43}`)
     ?.children[0] as HTMLElement
   const current_box_color = current_box.getAttribute('fill')
+
   if (Number.isNaN(color_cond)) return true
   if (current_box_color == BLOCK_COLORS[color_cond as keyof typeof BLOCK_COLORS]) {
     return true
@@ -278,12 +296,18 @@ const check_color_condition = (color_cond: number) => {
     return false
   }
 }
+
+const nextLevelBtn = ref(false)
+const next_level = () => {
+  level_up()
+}
 // the function that runs the instructions in f0
 const run_fo = async () => {
   for (let index = 0; index < f0.value.length; index++) {
     const val = f0.value[index][0]
     if (!run.value) return
     if (!check_color_condition(f0.value[index][1] as number)) continue
+
     switch (val) {
       case 0:
         await new Promise<void>((resolve) =>
@@ -296,7 +320,7 @@ const run_fo = async () => {
             resolve()
           }, index * SPEED)
         )
-        shift_instructions_stack()
+        // shift_instructions_stack()
         break
       case 1:
         await new Promise<void>((resolve) =>
@@ -310,13 +334,23 @@ const run_fo = async () => {
             resolve()
           }, index * SPEED)
         )
-        shift_instructions_stack()
+        // shift_instructions_stack()
         break
       case 2:
         await new Promise<void>((resolve) =>
           setTimeout(() => {
             move_plane()
-            check_get_objective()
+            if (check_get_objective() == 0) {
+              if (store.score == 3) {
+                win.value = true
+              } else {
+                // level_up()
+                // run.value = false
+                nextLevelBtn.value = true
+                return
+              }
+            }
+
             if (!check_hit_wall()) {
               return
             }
@@ -324,12 +358,12 @@ const run_fo = async () => {
             resolve()
           }, index * SPEED)
         )
-        shift_instructions_stack()
+        // shift_instructions_stack()
         break
       case 'f0':
         await new Promise((resolve) =>
           setTimeout(() => {
-            update_instructions_stack()
+            // update_instructions_stack()
             run_fo().then(resolve)
           }, index * SPEED)
         )
@@ -436,7 +470,7 @@ const select_red = () => {
         <StopIcon :disabled="!run" />
       </button>
     </div>
-    <div class="instructions-list">
+    <!-- <div class="instructions-list">
       <div
         :class="`next-instructions instruction-${i}`"
         v-for="(instruction, i) in instructions_stack.slice(0, 10)"
@@ -446,7 +480,7 @@ const select_red = () => {
         <Move v-if="instruction == 2" />
       </div>
       <div class="instruction-0" v-if="instructions_stack.length == 0"></div>
-    </div>
+    </div> -->
     <div class="selections">
       <button><TurnRight @click="select_turn_right" /></button>
       <button><TurnLeft @click="select_turn_left" /></button>
@@ -473,9 +507,15 @@ const select_red = () => {
         </div>
       </div>
     </div>
-    <button class="btn reset-btn" @click="reset_f0" :disabled="run">
-      <ResetIcon :disabled="run" />
-    </button>
+    <div>
+      <button class="btn reset-btn" @click="reset_f0" :disabled="run">
+        <ResetIcon :disabled="run" />
+      </button>
+      <div v-if="nextLevelBtn" class="next-level">
+        Congrats you rock !! play the next one
+        <button @click="next_level" class="btn"><NextLevelIcon /></button>
+      </div>
+    </div>
     <div class="description">
       <p>
         {{ level_data?.description }}
@@ -484,6 +524,11 @@ const select_red = () => {
   </main>
 </template>
 <style scoped>
+.next-level {
+  font-size: large;
+  font-weight: 600;
+  margin: 1rem;
+}
 .reset-btn {
   margin: 1rem;
 }

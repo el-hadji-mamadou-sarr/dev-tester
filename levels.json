@@ -12,6 +12,23 @@
         "x": 7,
         "y": 1
       }
-    ]
+    ],
+    "description": "Select a box in f0 then select an instruction to move the plane to the star. you can also use the color as conditions. To use the color: select the box the desired color then the direction."
+  },
+  {
+    "plane_pos": { "x": 1, "y": 1 },
+    "plane_direction": "right",
+    "gameMap": [
+      [3, 3, 3, 3, 3, 3, 3, 3, 3],
+      [3, 0, 0, 0, 0, 0, 0, 2, 3],
+      [3, 0, 0, 0, 0, 0, 0, 0, 3],
+      [3, 3, 3, 3, 3, 3, 3, 3, 3]
+    ],
+    "objectives": [
+      { "x": 7, "y": 1 },
+      { "x": 4, "y": 1 },
+      { "x": 7, "y": 2 }
+    ],
+    "description": "Select a box in f0 then select an instruction to move the plane to the star. you can also use the color as conditions. To use the color: select the box the desired color then the direction."
   }
 ]

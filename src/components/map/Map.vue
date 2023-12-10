@@ -1,5 +1,14 @@
 <template>
-  <div class="map">
+  <div class="map squeletton" v-if="loading">
+    <div v-for="(block_row, i) in squeleton" class="map-rows">
+      <Block
+        :color="BLOCK_COLORS[block_col as keyof typeof BLOCK_COLORS]"
+        v-for="(block_col, j) in block_row"
+        :class="`map-${j}-${i} map-cols`"
+      />
+    </div>
+  </div>
+  <div class="map" v-show="!loading">
     <div v-for="(block_row, i) in level_data.gameMap" class="map-rows">
       <Block
         :color="BLOCK_COLORS[block_col as keyof typeof BLOCK_COLORS]"
@@ -8,13 +17,18 @@
       />
     </div>
     <Plane :position="level_data.plane_pos" />
-    <Objective v-for="(object_pos, i) in level_data.objectives" :position="object_pos" :index="i" />
+    <Objective
+      v-if="level_data.objectives"
+      v-for="(object_pos, i) in level_data.objectives"
+      :position="object_pos"
+      :index="i"
+    />
   </div>
 </template>
 <script setup lang="ts">
 import Block from './Block.vue'
 import Plane from '@/components/sprites/Plane.vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import Objective from '../sprites/Objective.vue'
 import { default_level_map, BLOCK_COLORS } from '@/utils/constantes'
 const props = defineProps({
@@ -24,6 +38,14 @@ const props = defineProps({
   },
   loading: { type: Boolean }
 })
+
+const squeleton = [
+  [3, 3, 3, 3, 3, 3, 3, 3, 3],
+  [3, 3, 3, 3, 3, 3, 3, 3, 3],
+  [3, 3, 3, 3, 3, 3, 3, 3, 3],
+  [3, 3, 3, 3, 3, 3, 3, 3, 3],
+  [3, 3, 3, 3, 3, 3, 3, 3, 3]
+]
 </script>
 <style scoped>
 .map-rows {

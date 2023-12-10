@@ -6,7 +6,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      redirect: '/level/0'
+    },
+
+    {
+      path: '/level/:levelID',
+      name: 'game',
       component: GameView
     }
   ]

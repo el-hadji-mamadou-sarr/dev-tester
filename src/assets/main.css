@@ -1,9 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
 body,
 main,
 button {
-  font-family: 'Russo One', sans-serif;
+  font-family: 'Ubuntu', sans-serif;
 }
 main {
   margin: 0;

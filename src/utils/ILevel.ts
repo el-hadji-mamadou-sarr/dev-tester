@@ -3,4 +3,5 @@ export interface Level {
   gameMap: number[][]
   objectives: { x: number; y: number }[]
   plane_direction: string
+  description: string
 }
